@@ -1,0 +1,63 @@
+<?php
+require_once __DIR__ . '/auth.php';
+iniciar_sessao();
+if (empty($_SESSION['usuario_id'])) { header('Location: login.php'); exit; }
+$usuario = $_SESSION['usuario'];
+$nivel = $_SESSION['nivel'];
+$icone = $nivel === 'admin' ? '👑' : '👷';
+$csrf = token_csrf();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+<title>Plataforma de Construção Civil</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<div class="header-top">
+<h1><span class="icone-titulo">🏗️</span>Plataforma de Construção Civil</h1>
+<div class="usuario"><?= $icone ?> <?= htmlspecialchars($usuario, ENT_QUOTES, 'UTF-8') ?> <span style="font-size:11px;opacity:.7">(<?= htmlspecialchars($nivel, ENT_QUOTES, 'UTF-8') ?>)</span></div>
+<button class="btn-sair" id="btn-sair" type="button">🚪 Sair</button>
+</div>
+<nav id="nav-principal"></nav>
+</header>
+<main id="conteudo-principal"></main>
+<div class="modal-overlay" id="modal-overlay">
+<div class="modal-box">
+<div class="modal-titulo" id="modal-titulo">Editar registro</div>
+<div id="modal-campos"></div>
+<div class="modal-acoes"><button class="btn-cancelar" id="btn-cancelar" type="button">Cancelar</button><button class="btn-salvar" id="btn-salvar" type="button">💾 Salvar</button></div>
+</div></div>
+<script>
+const CSRF=document.querySelector('meta[name="csrf-token"]').content;
+const modulos=[
+{id:'custos',label:'Custos',icone:'💰',titulo:'Gerenciamento de Custos',subtitulo:'Registre despesas e gastos da obra',campos:[{name:'descricao',label:'Descrição',type:'text',placeholder:'Ex: Compra de cimento'},{name:'valor',label:'Valor (R$)',type:'number',placeholder:'0,00',step:'0.01',min:'0.01'},{name:'data',label:'Data',type:'date'}],cp:{principal:'descricao',valor:'valor',detalhe:'data'}},
+{id:'funcionarios',label:'Funcionários',icone:'👷',titulo:'Gerenciamento de Funcionários',subtitulo:'Cadastre a equipe da obra',campos:[{name:'nome',label:'Nome completo',type:'text',placeholder:'Ex: João Silva'},{name:'cargo',label:'Cargo',type:'text',placeholder:'Ex: Pedreiro'},{name:'salario',label:'Salário (R$)',type:'number',placeholder:'0,00',step:'0.01',min:'0.01'},{name:'admissao',label:'Data de admissão',type:'date'}],cp:{principal:'nome',valor:'salario',detalhe:'cargo'}},
+{id:'materiais',label:'Materiais',icone:'🧱',titulo:'Controle de Materiais',subtitulo:'Gerencie os materiais utilizados',campos:[{name:'nome',label:'Material',type:'text',placeholder:'Ex: Tijolo'},{name:'quantidade',label:'Quantidade',type:'number',placeholder:'0',step:'0.01',min:'0.01'},{name:'custo',label:'Custo (R$)',type:'number',placeholder:'0,00',step:'0.01',min:'0.01'},{name:'data',label:'Data',type:'date'}],cp:{principal:'nome',valor:'custo',detalhe:'quantidade'}},
+{id:'equipamentos',label:'Equipamentos',icone:'🔧',titulo:'Controle de Equipamentos',subtitulo:'Cadastre máquinas e ferramentas',campos:[{name:'nome',label:'Equipamento',type:'text',placeholder:'Ex: Betoneira 400L'},{name:'status',label:'Status',type:'text',placeholder:'Ex: Disponível'},{name:'custo',label:'Custo/Aluguel (R$)',type:'number',placeholder:'0,00',step:'0.01',min:'0.01'},{name:'data',label:'Data',type:'date'}],cp:{principal:'nome',valor:'custo',detalhe:'status'}},
+{id:'cronograma',label:'Cronograma',icone:'📅',titulo:'Cronograma da Obra',subtitulo:'Planeje as etapas e prazos',campos:[{name:'tarefa',label:'Tarefa',type:'text',placeholder:'Ex: Concretagem da laje'},{name:'responsavel',label:'Responsável',type:'text',placeholder:'Ex: Carlos Mestre'},{name:'inicio',label:'Data de início',type:'date'},{name:'prazo',label:'Prazo/Entrega',type:'date'}],cp:{principal:'tarefa',valor:null,detalhe:'responsavel'}},
+{id:'fornecedores',label:'Fornecedores',icone:'🚚',titulo:'Cadastro de Fornecedores',subtitulo:'Gerencie seus parceiros e fornecedores',campos:[{name:'nome',label:'Nome / Empresa',type:'text',placeholder:'Ex: Materiais Santos Ltda'},{name:'contato',label:'Telefone / E-mail',type:'text',placeholder:'Ex: (13) 99999-0000'},{name:'material',label:'Material fornecido',type:'text',placeholder:'Ex: Cimento, Areia'},{name:'data',label:'Data de cadastro',type:'date'}],cp:{principal:'nome',valor:null,detalhe:'contato'}}];
+const registros=Object.fromEntries(modulos.map(m=>[m.id,[]]));
+const nav=document.getElementById('nav-principal'),main=document.getElementById('conteudo-principal');
+function criarCampo(c,idPrefix){const wrap=document.createElement('div');wrap.className='campo-grupo';const label=document.createElement('label');label.htmlFor=idPrefix+'-'+c.name;label.textContent=c.label;const input=document.createElement('input');input.type=c.type;input.id=idPrefix+'-'+c.name;input.name=c.name;input.placeholder=c.placeholder||'';input.required=true;if(c.step)input.step=c.step;if(c.min)input.min=c.min;wrap.append(label,input);return wrap;}
+modulos.forEach((m,i)=>{const btn=document.createElement('button');btn.type='button';btn.textContent=m.icone+' '+m.label;btn.dataset.id=m.id;if(i===0)btn.classList.add('active');btn.addEventListener('click',()=>alternarModulo(m.id,btn));nav.appendChild(btn);const sec=document.createElement('section');sec.className='modulo'+(i===0?' active':'');sec.id='mod-'+m.id;const formCard=document.createElement('div');formCard.className='form-card';const title=document.createElement('div');title.className='card-titulo';title.innerHTML='<div class="icone">'+m.icone+'</div><div><h2></h2><span></span></div>';title.querySelector('h2').textContent=m.titulo;title.querySelector('span').textContent=m.subtitulo;const form=document.createElement('form');form.id='form-'+m.id;m.campos.forEach(c=>form.appendChild(criarCampo(c,m.id)));const submit=document.createElement('button');submit.type='submit';submit.className='btn-registrar';submit.textContent='✅ Registrar';form.appendChild(submit);const msg=document.createElement('div');msg.className='mensagem';msg.id='msg-'+m.id;formCard.append(title,form,msg);form.addEventListener('submit',e=>registrar(e,m.id));const registrosCard=document.createElement('div');registrosCard.className='registros-card';registrosCard.innerHTML='<div class="registros-header"><h3>📋 Histórico</h3><span class="badge-count" id="count-'+m.id+'">0 registros</span></div><div id="lista-'+m.id+'"></div>';main.append(sec);sec.append(formCard,registrosCard);mostrarVazio(m.id);});
+function mostrarVazio(id){const lista=document.getElementById('lista-'+id);lista.innerHTML='';const v=document.createElement('div');v.className='registros-vazio';v.innerHTML='<div class="vazio-icone">📂</div><span>Nenhum registro ainda</span>';lista.appendChild(v);}
+function alternarModulo(id,btn){document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.modulo').forEach(m=>m.classList.remove('active'));document.getElementById('mod-'+id).classList.add('active');carregarRegistros(id);}
+async function requisicao(url,options={}){options.headers=Object.assign({'X-CSRF-Token':CSRF},options.headers||{});const r=await fetch(url,options);let j;try{j=await r.json()}catch(e){throw new Error('Resposta inválida do servidor.')}if(r.status===401){location.href='login.php';throw new Error(j.erro||'Sessão expirada.')}if(!r.ok)throw new Error(j.erro||'Ocorreu um erro.');return j;}
+async function carregarRegistros(id){const lista=document.getElementById('lista-'+id);lista.innerHTML='<div class="registros-vazio"><div class="vazio-icone">⏳</div><span>Carregando...</span></div>';try{const j=await requisicao('listar_'+id+'.php');registros[id]=Array.isArray(j.dados)?j.dados:[];renderizarLista(id);}catch(err){lista.innerHTML='';const v=document.createElement('div');v.className='registros-vazio';v.innerHTML='<div class="vazio-icone">⚠️</div>';const s=document.createElement('span');s.textContent=err.message;v.appendChild(s);lista.appendChild(v);}}
+async function registrar(event,id){event.preventDefault();const form=event.currentTarget,msg=document.getElementById('msg-'+id),btn=form.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Salvando...';msg.className='mensagem';msg.textContent='';try{await requisicao('server_'+id+'.php',{method:'POST',body:new FormData(form)});form.reset();msg.className='mensagem sucesso';msg.textContent='✅ Registro concluído com sucesso!';carregarRegistros(id);}catch(err){msg.className='mensagem erro';msg.textContent='❌ '+err.message;}finally{btn.disabled=false;btn.textContent='✅ Registrar';}}
+function formatarData(valor){if(/^\d{4}-\d{2}-\d{2}$/.test(String(valor))){const[a,m,d]=valor.split('-');return d+'/'+m+'/'+a;}return valor||'';}
+function renderizarLista(id){const modulo=modulos.find(m=>m.id===id),lista=document.getElementById('lista-'+id),count=document.getElementById('count-'+id),dados=registros[id];count.textContent=dados.length+(dados.length===1?' registro':' registros');lista.innerHTML='';if(!dados.length){mostrarVazio(id);return;}const wrapper=document.createElement('div');wrapper.className='registros-lista';dados.forEach(r=>{const item=document.createElement('div');item.className='registro-item';const info=document.createElement('div');info.className='registro-info';const principal=document.createElement('div');principal.className='registro-principal';principal.textContent=r[modulo.cp.principal]||'—';const detalhe=document.createElement('div');detalhe.className='registro-detalhe';detalhe.textContent=formatarData(modulo.cp.detalhe?r[modulo.cp.detalhe]||'':'');info.append(principal,detalhe);item.appendChild(info);if(modulo.cp.valor){const n=Number(r[modulo.cp.valor]);if(Number.isFinite(n)){const valor=document.createElement('div');valor.className='registro-valor';valor.textContent='R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});item.appendChild(valor);}}const acoes=document.createElement('div');acoes.className='registro-acoes';const editar=document.createElement('button');editar.type='button';editar.className='btn-acao btn-editar';editar.textContent='✏️ Editar';editar.addEventListener('click',()=>abrirEditar(id,r.id));const excluir=document.createElement('button');excluir.type='button';excluir.className='btn-acao btn-excluir';excluir.textContent='🗑️ Excluir';excluir.addEventListener('click',()=>excluirRegistro(id,r.id));acoes.append(editar,excluir);item.appendChild(acoes);wrapper.appendChild(item);});lista.appendChild(wrapper);}
+async function excluirRegistro(moduloId,id){if(!confirm('Deseja excluir este registro?'))return;const fd=new FormData();fd.append('id',id);try{await requisicao('deletar_'+moduloId+'.php',{method:'POST',body:fd});await carregarRegistros(moduloId);}catch(err){alert('Erro ao excluir: '+err.message);}}
+let editandoModulo=null,editandoId=null;
+function abrirEditar(moduloId,id){const modulo=modulos.find(m=>m.id===moduloId),registro=registros[moduloId].find(r=>Number(r.id)===Number(id));if(!registro)return;editandoModulo=moduloId;editandoId=id;document.getElementById('modal-titulo').textContent='Editar '+modulo.label;const campos=document.getElementById('modal-campos');campos.innerHTML='';modulo.campos.forEach(c=>{const wrap=criarCampo(c,'edit');const input=wrap.querySelector('input');input.value=registro[c.name]??'';campos.appendChild(wrap);});document.getElementById('modal-overlay').classList.add('aberto');setTimeout(()=>campos.querySelector('input')?.focus(),50);}
+function fecharModal(){document.getElementById('modal-overlay').classList.remove('aberto');editandoModulo=null;editandoId=null;}
+async function salvarEdicao(){if(!editandoModulo||!editandoId)return;const modulo=modulos.find(m=>m.id===editandoModulo),fd=new FormData();fd.append('id',editandoId);modulo.campos.forEach(c=>fd.append(c.name,document.getElementById('edit-'+c.name).value));const btn=document.getElementById('btn-salvar');btn.disabled=true;try{await requisicao('editar_'+editandoModulo+'.php',{method:'POST',body:fd});const id=editandoModulo;fecharModal();await carregarRegistros(id);}catch(err){alert('Erro ao salvar: '+err.message);}finally{btn.disabled=false;}}
+document.getElementById('btn-cancelar').addEventListener('click',fecharModal);document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target.id==='modal-overlay')fecharModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharModal()});document.getElementById('btn-salvar').addEventListener('click',salvarEdicao);document.getElementById('btn-sair').addEventListener('click',()=>{if(confirm('Deseja sair da plataforma?'))location.href='logout.php';});carregarRegistros(modulos[0].id);
+</script>
+</body>
+</html>
