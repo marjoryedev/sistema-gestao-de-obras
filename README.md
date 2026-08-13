@@ -1,33 +1,69 @@
-# Sistema de Gestão de Obras
+# 🔨 Sistema de Gestão de Obras
 
-Projeto web de portfólio para gerenciamento de custos, funcionários, materiais, equipamentos, cronograma e fornecedores.
+Sistema web desenvolvido para auxiliar no **gerenciamento e organização de informações relacionadas a obras**, centralizando diferentes áreas da gestão em uma única aplicação.
 
-## Tecnologias
-- PHP 7.4+
-- MySQL/MariaDB
-- PDO
-- HTML5
-- CSS3
-- JavaScript
+O projeto foi desenvolvido como prática de desenvolvimento web, envolvendo **PHP, MySQL, autenticação de usuários e operações CRUD**.
 
-## Segurança aplicada
-- PDO com prepared statements
-- Senhas com `password_hash()` / `password_verify()`
-- Regeneração do ID da sessão após login
-- Cookies de sessão com HttpOnly e SameSite
-- Proteção CSRF para operações POST
-- Verificação de autenticação em todos os endpoints
-- Validação de tipos, datas, números e tamanhos
-- Saída de dados com `textContent` no front-end para reduzir risco de XSS
-- Credenciais de banco fora do repositório público
-- Mensagens de erro sem exposição de detalhes internos do banco
+## ✨ Funcionalidades
 
-## Instalação
-1. Crie um banco MySQL.
-2. Importe `database.sql` no phpMyAdmin.
-3. Preencha `db_config.php` com as credenciais do banco.
-4. Crie um usuário na tabela `usuarios`. A coluna `senha` deve receber um hash gerado por `password_hash('SUA_SENHA', PASSWORD_DEFAULT)`.
-5. Faça upload dos arquivos para a hospedagem.
+* 🔐 Sistema de login e autenticação
+* 👷 Cadastro e gerenciamento de funcionários
+* 🧱 Cadastro e gerenciamento de materiais
+* 🚜 Cadastro e gerenciamento de equipamentos
+* 📦 Cadastro e gerenciamento de fornecedores
+* 💰 Controle de custos
+* 📅 Gerenciamento de cronogramas
+* 🔒 Controle de sessão e acesso às páginas
+* 🗃️ Integração com banco de dados MySQL
+
+## 🛠️ Tecnologias utilizadas
+
+* **PHP** — lógica e processamento da aplicação
+* **MySQL** — armazenamento e gerenciamento dos dados
+* **HTML** — estrutura das páginas
+* **CSS** — estilização e interface
+* **Apache** — servidor web
+* **XAMPP** — ambiente de desenvolvimento local
+
+## 📂 Estrutura do projeto
+
+O sistema é dividido em diferentes arquivos PHP responsáveis pelas funcionalidades da aplicação, incluindo:
+
+* Autenticação e controle de sessão
+* Cadastro, edição, listagem e exclusão de registros
+* Gerenciamento de funcionários, materiais, equipamentos e fornecedores
+* Controle de custos
+* Gerenciamento de cronogramas
+* Configuração e integração com o banco de dados
+
+## 🗄️ Banco de dados
+
+O arquivo `database.sql` contém a estrutura necessária para criação do banco de dados utilizado pelo sistema.
+
+Para configurar o projeto localmente:
+
+1. Crie um banco de dados MySQL.
+2. Importe o arquivo `database.sql`.
+3. Copie `db_config.example.php` para um arquivo de configuração próprio.
+4. Informe as credenciais do seu banco de dados.
+5. Execute o projeto utilizando um servidor PHP/Apache.
+
+> 🔐 Dados de acesso ao banco de dados não devem ser enviados para o repositório público.
+
+## 🚧 Status do projeto
+
+**Em desenvolvimento.**
+
+O projeto continua sendo aprimorado como parte da minha formação e prática em desenvolvimento web.
+
+## 🎯 Objetivo
+
+Este projeto foi desenvolvido com o objetivo de praticar conceitos de **desenvolvimento web, PHP, bancos de dados, autenticação, CRUD e organização de sistemas**, além de fazer parte do meu portfólio profissional.
+
+---
+
+💻 Desenvolvido por **Marjorye**
+🔗 [GitHub](https://github.com/marjoryedev)
 
 ## GitHub
 Não publique `db_config.php` com credenciais reais. Use `db_config.example.php` como modelo e mantenha `db_config.php` no `.gitignore`.
